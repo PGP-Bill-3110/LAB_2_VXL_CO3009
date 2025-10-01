@@ -295,6 +295,18 @@ void updateLEDMatrix(int index) {
     enableRow(index);
 }
 
+void displayMatrix(uint8_t *buffer);
+
+
+void shiftLeftAnimation() {
+    for (int i = 0; i < 8; i++) {
+        uint8_t msb = (matrix_buffer[i] & 0x80) >> 7;
+        matrix_buffer[i] <<= 1;
+        matrix_buffer[i] |= msb;
+    }
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -501,10 +513,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-const unsigned int SCALE = 200; // Switch time * Number of LED / timer (in ms)
+const unsigned int SCALE = 200;
 int counter = SCALE;
 unsigned int index_led = 0;
-
+int shift_tick=0;
 int matrix_tick = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -519,6 +531,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         matrix_tick = 0;
     }
 
+    shift_tick++;
+    if (shift_tick >= 100) {   // khoảng 100ms
+        shiftLeftAnimation();
+        shift_tick = 0;
+    }
 
     if (counter % 250 == 0) {
         update7SEG(index_led++);
@@ -531,6 +548,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     counter = (counter > 0) ? counter - 1 : SCALE;
 }
+
 
 
 /* USER CODE END 4 */
