@@ -181,7 +181,7 @@ void initState() {
 }
 
 const unsigned int MAX_LED = 4;
-int led_buffer[4] = {1, 2, 3, 4};
+int led_buffer[4];
 void update7SEG ( int index ){
 	switch (index) {
 		case 0:
@@ -219,6 +219,13 @@ void update7SEG ( int index ){
 			HAL_GPIO_WritePin(En3_GPIO_Port, En3_Pin, GPIO_PIN_RESET);
 			break;
 	}
+}
+int hour = 12, minute = 34, second = 0;
+void updateClockBuffer() {
+	led_buffer[0] = hour / 10;
+	led_buffer[1] = hour % 10;
+	led_buffer[2] = minute / 10;
+	led_buffer[3] = minute % 10;
 }
 
 void setNumberOnClock(int num) {
@@ -412,6 +419,8 @@ const unsigned int SCALE = 200; // Switch time * Number of LED / timer (in ms)
 int counter = SCALE;
 unsigned int index_led = 0;
 int tick = 0;
+
+
 // Ham nay giong nhu while loop nhung 10ms chay 1 lan (dgl Timer)
 void HAL_TIM_PeriodElapsedCallback ( TIM_HandleTypeDef * htim )
 {
@@ -421,7 +430,20 @@ void HAL_TIM_PeriodElapsedCallback ( TIM_HandleTypeDef * htim )
         HAL_GPIO_TogglePin(DOT_GPIO_Port, DOT_Pin);
         tick =0;
     }
-
+    if (tick >= 1000) {  // Mỗi 1s
+        tick = 0;
+        second++;
+        if (second >= 60) {
+            second = 0;
+            minute++;
+            if (minute >= 60) {
+                minute = 0;
+                hour++;
+                if (hour >= 24) hour = 0;
+            }
+        }
+        updateClockBuffer(); // Cập nhật giá trị mới vào led_buffer
+    }
 	// Production
 	if (counter == SCALE) {
 		update7SEG(index_led++);
