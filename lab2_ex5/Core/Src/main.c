@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "software_timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,24 +56,6 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-
-int timer0_counter = 0;
-int timer0_flag = 0;
-int TIMER_CYCLE = 10;
-void setTimer0(int duration){
-	timer0_counter = duration / 10;
-	timer0_flag = 0;
-}
-void timer_run(){
-	if(timer0_counter > 0){
-		 timer0_counter--;
-		 if(timer0_counter == 0) timer0_flag = 1;
-	}
-}
-
-int hour = 15, minute = 8, second = 50;
-
 void clear7SEG() {
     HAL_GPIO_WritePin(LED_a_GPIO_Port, LED_a_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_b_GPIO_Port, LED_b_Pin, GPIO_PIN_SET);
@@ -189,9 +171,9 @@ void display7SEG(int num){
 	  }
  }
 
-
+int hour = 23, minute = 59, second = 59;
 const unsigned int MAX_LED = 4;
-int led_buffer[4] = {1, 2, 3, 4};
+int led_buffer[4];
 void update7SEG ( int index ){
 	switch (index) {
 		case 0:
@@ -230,8 +212,6 @@ void update7SEG ( int index ){
 			break;
 	}
 }
-
-
 
 void updateClockBuffer() {
 	led_buffer[0] = hour / 10;
@@ -277,32 +257,53 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-setTimer0(1000);
+  const unsigned int SCALE = 500;
+  int counter = SCALE;
+  unsigned int index_led = 0;
+  int dot_counter=0;
+setTimer1(1000);
+
+updateClockBuffer();
   while (1)
   {
     /* USER CODE END WHILE */
-	  if(timer0_flag == 1){
-		  HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
-		  setTimer0(2000);
-	  }
-second++;
-    if (second >= 60)
-    {
-        second = 0;
-        minute++;
-    }
-    if (minute >= 60)
-    {
-        minute = 0;
-        hour++;
-    }
-    if (hour >= 24)
-    {
-        hour = 0;
-    }
-    updateClockBuffer();
-    HAL_Delay(1000);
-    /* USER CODE BEGIN 3 */
+      if(timer1_flag == 1){
+          timer1_flag = 0;       // reset flag
+          HAL_GPIO_TogglePin(LED_RED_GPIO_Port, LED_RED_Pin);
+          second++;
+                  if (second >= 60) {
+                      second = 0;
+                      minute++;
+                      if (minute >= 60) {
+                          minute = 0;
+                          hour++;
+                          if (hour >= 24) {
+                              hour = 0;   // reset về 00:00:00
+                          }
+                      }
+                  }
+
+                  // ----- Cập nhật giá trị ra led_buffer -----
+                  updateClockBuffer();
+
+                  setTimer1(1000);  // reset timer 1 giây
+              }
+
+      if(counter == SCALE || counter == (SCALE*3/4) || counter == (SCALE*2/4) || counter == (SCALE*1/4)){
+          update7SEG(index_led++);
+          if(index_led >= MAX_LED) index_led = 0;
+      }
+      counter = (counter > 0) ? counter - 1 : SCALE;
+
+
+      dot_counter++;
+      if(dot_counter >= 500){
+          HAL_GPIO_TogglePin(Dot_GPIO_Port, Dot_Pin);
+          dot_counter = 0;
+      }
+
+      // Thêm 1 delay nhỏ nếu muốn tránh chạy quá nhanh
+      HAL_Delay(1);  // 1 ms
   }
   /* USER CODE END 3 */
 }
@@ -435,27 +436,11 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-const unsigned int SCALE = 100; // Switch time * Number of LED / timer (in ms)
-int counter = SCALE;
-unsigned int index_led = 0;
 
 void HAL_TIM_PeriodElapsedCallback ( TIM_HandleTypeDef * htim )
 {
-	timer_run();
+	timerRun();
 
-	if (counter == SCALE) {
-		update7SEG(index_led++);
-	} else if(counter == (SCALE*3/4)) {
-		update7SEG(index_led++);
-	} else if (counter == (SCALE*2/4)) {
-		update7SEG(index_led++);
-	} else if (counter == (SCALE*1/4)) {
-		update7SEG(index_led++);
-	}
-
-	if (!(index_led < MAX_LED)) index_led = 0;
-
-	counter = (counter > 0) ? counter-1 : SCALE;
 }
 /* USER CODE END 4 */
 
