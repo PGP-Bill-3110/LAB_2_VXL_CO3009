@@ -70,7 +70,7 @@ void timer_run(){
 	}
 }
 
-int hour = 15, minute = 8, second = 50;
+int hour = 23, minute = 598, second = 55;
 
 void clear7SEG() {
     HAL_GPIO_WritePin(LED_a_GPIO_Port, LED_a_Pin, GPIO_PIN_SET);
@@ -189,7 +189,7 @@ void display7SEG(int num){
 
 
 const unsigned int MAX_LED = 4;
-int led_buffer[4] = {1, 2, 3, 4};
+int led_buffer[4] ;
 void update7SEG ( int index ){
 	switch (index) {
 		case 0:
@@ -339,7 +339,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  clear7SEG();
+  updateClockBuffer();
   HAL_TIM_Base_Start_IT (&htim2);
   /* USER CODE END 2 */
 
